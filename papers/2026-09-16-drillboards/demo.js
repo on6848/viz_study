@@ -4,8 +4,11 @@
 // operators (Label / Summarize / Archetype / Juxtaposition / Overlay), then
 // navigate that hierarchy by drilling down / rolling up.
 //
-// IMPORTANT: the six-region monthly dataset below is SYNTHETIC, made up for
-// this demo — not data or results from the paper.
+// IMPORTANT: the per-prefecture monthly tourist-count dataset below is
+// SYNTHETIC, made up for this demo — not data or results from the paper.
+// Real prefecture names are used only to make the "merge into a coarser
+// grouping" story concrete and recognizable (the same idea as day→month→
+// year or city→prefecture rollups), not to claim real tourism figures.
 (function () {
   "use strict";
 
@@ -13,13 +16,14 @@
   if (!root) return;
 
   var REGIONS = [
-    { name: "北エリア", color: "--series-1", values: [82, 85, 88, 90, 95, 100, 105, 108, 112, 118, 123, 128] },
-    { name: "南エリア", color: "--series-2", values: [100, 98, 95, 90, 85, 88, 95, 105, 115, 120, 118, 110] },
-    { name: "東エリア", color: "--series-3", values: [95, 97, 94, 96, 98, 97, 99, 101, 98, 100, 102, 99] },
-    { name: "西エリア", color: "--series-4", values: [130, 125, 120, 115, 108, 102, 98, 95, 90, 88, 85, 82] },
-    { name: "中央エリア", color: "--series-5", values: [70, 75, 82, 90, 98, 108, 118, 128, 135, 142, 148, 155] },
-    { name: "沿岸エリア", color: "--series-7", values: [100, 115, 90, 120, 95, 130, 105, 140, 110, 125, 100, 135] }
+    { name: "北海道", area: "北海道地方", color: "--series-1", values: [82, 85, 88, 90, 95, 100, 105, 108, 112, 118, 123, 128] },
+    { name: "宮城県", area: "東北地方", color: "--series-2", values: [130, 125, 120, 115, 108, 102, 98, 95, 90, 88, 85, 82] },
+    { name: "東京都", area: "関東地方", color: "--series-3", values: [95, 97, 94, 96, 98, 97, 99, 101, 98, 100, 102, 99] },
+    { name: "大阪府", area: "近畿地方", color: "--series-4", values: [70, 75, 82, 90, 98, 108, 118, 128, 135, 142, 148, 155] },
+    { name: "福岡県", area: "九州地方", color: "--series-5", values: [100, 98, 95, 90, 85, 88, 95, 105, 115, 120, 118, 110] },
+    { name: "沖縄県", area: "沖縄地方", color: "--series-7", values: [100, 115, 90, 120, 95, 130, 105, 140, 110, 125, 100, 135] }
   ];
+  var MONTH_LABELS = "2025年1月〜12月";
 
   var OPS = {
     label:      { code: "LBL", name: "Label", jp: "ラベル化", desc: "代表値（平均）1つに要約", min: 1 },
@@ -43,7 +47,7 @@
   }
 
   function makeAtom(region) {
-    return { id: nextId(), type: "atom", name: region.name, color: region.color, values: region.values };
+    return { id: nextId(), type: "atom", name: region.name, area: region.area, color: region.color, values: region.values };
   }
 
   function makePile(opKey, selected) {
@@ -155,7 +159,7 @@
       frag.appendChild(lineChart([node.values], [node.color], 128, 46));
       var sub = document.createElement("div");
       sub.className = "db-sub";
-      sub.textContent = "月次データ（12ヶ月）";
+      sub.textContent = node.area + "・" + MONTH_LABELS + "の観光客数";
       frag.appendChild(sub);
       return frag;
     }
@@ -273,7 +277,7 @@
     var hint = document.createElement("div");
     hint.className = "db-status";
     hint.textContent = selected.size === 0
-      ? "チャートをクリックして選択してください（複数選択可）。選ぶと使える演算子が有効になります。"
+      ? "例: 北海道＋宮城県（東日本）のように、まとめたい都道府県をクリックして選択 → 上の演算子ボタンで統合。全部まとめれば「全国」1枚になります。"
       : selected.size + "件選択中。上の演算子ボタンで統合できます。";
     root.appendChild(hint);
 

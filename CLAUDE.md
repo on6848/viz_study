@@ -61,4 +61,6 @@
   参照している全HTML（`index.html`、`papers/*/index.html`、`papers/_template/index.html`）の
   バージョン文字列を新しい値に一括で上げること（さもないとブラウザ/GitHub PagesのCDNキャッシュにより
   古い見た目のまま反映されないことがある）。`papers.json` は `assets/js/site.js` 側で
-  タイムスタンプ付きfetchをしているため個別のバージョニングは不要。
+  タイムスタンプ付きfetchをしているため個別のバージョニングは不要。各ページ固有の `demo.js` も
+  `<script src="demo.js?v=1">` のように独自のバージョンを付けており、その `demo.js` を修正したら
+  そのページ内だけで数字を上げること（他ページには影響しない）。
