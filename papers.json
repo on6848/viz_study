@@ -7,5 +7,14 @@
     "arxivUrl": "https://arxiv.org/abs/1706.03762",
     "oneLiner": "再帰も畳み込みも使わず、Self-Attentionだけで系列を処理するTransformerを提案した論文。",
     "tags": ["NLP", "Transformer", "Attention"]
+  },
+  {
+    "slug": "2026-09-16-drillboards",
+    "date": "2026-09-16",
+    "title": "Drillboards: Adaptive Visualization Dashboards for Dynamic Personalization of Visualization Experiences",
+    "authors": "Shin, Na & Elmqvist, 2024/2025",
+    "arxivUrl": "https://arxiv.org/abs/2410.12744",
+    "oneLiner": "複数チャートを演算子で統合してツリーを作り、ドリルダウン/ロールアップで詳細度を自由に切り替えられるダッシュボード手法。",
+    "tags": ["HCI", "Visualization", "Dashboards"]
   }
 ]

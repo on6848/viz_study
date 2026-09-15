@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drillboards — viz_study</title>
+<meta name="description" content="複数のチャートを演算子で統合し、階層をドリルダウン/ロールアップして詳細度を自由に切り替えられるダッシュボード手法を、実際に組み立てて試せるデモ。">
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+  .db-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
+  .db-op-btn {
+    background: var(--surface-page);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.35;
+    max-width: 150px;
+  }
+  .db-op-btn strong { display: block; font-size: 0.85rem; }
+  .db-op-btn span { color: var(--text-muted); font-size: 0.74rem; }
+  .db-op-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .db-op-btn:not(:disabled):hover { border-color: var(--series-1); }
+
+  .db-hint { color: var(--text-secondary); font-size: 0.85rem; margin: 6px 0 14px; }
+
+  .db-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+
+  .db-card {
+    width: 148px;
+    background: var(--surface-page);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    position: relative;
+  }
+  .db-card.is-atom { cursor: pointer; }
+  .db-card.is-selected { border-color: var(--series-2); box-shadow: 0 0 0 2px var(--series-2) inset; }
+  .db-card.is-pile {
+    box-shadow: 4px 4px 0 -2px var(--surface-1), 4px 4px 0 0 var(--border),
+                7px 7px 0 -2px var(--surface-1), 7px 7px 0 0 var(--border);
+    margin-right: 8px; margin-bottom: 8px;
+  }
+  .db-card .db-title { font-size: 0.76rem; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .db-card .db-sub { font-size: 0.68rem; color: var(--text-muted); overflow-wrap: anywhere; }
+  .db-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: var(--series-1);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-bottom: 4px;
+  }
+  .db-stat { font-size: 1.5rem; font-weight: 700; color: var(--series-1); margin: 6px 0 2px; }
+
+  .db-group-wrap {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 10px 10px 4px;
+    position: relative;
+  }
+  .db-group-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px; font-size: 0.76rem; color: var(--text-secondary);
+  }
+  .db-rollup-btn {
+    background: var(--series-1); color: #fff; border: none; border-radius: 6px;
+    font-size: 0.72rem; padding: 3px 8px; cursor: pointer;
+  }
+  .db-rollup-btn:hover { opacity: 0.85; }
+
+  .db-status { font-size: 0.85rem; color: var(--text-secondary); margin: 10px 0; min-height: 1.4em; }
+  .db-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .db-controls button {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-secondary); font-size: 0.8rem; padding: 5px 12px; cursor: pointer;
+  }
+  .db-controls button:hover { border-color: var(--series-1); }
+  .db-controls button.primary { background: var(--series-3); border-color: var(--series-3); color: #fff; }
+
+  .db-mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .db-mode-tabs button {
+    background: var(--surface-page); border: 1px solid var(--border); border-radius: 999px;
+    font-size: 0.82rem; padding: 5px 14px; cursor: pointer; color: var(--text-secondary);
+  }
+  .db-mode-tabs button[aria-pressed="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .db-mode-tabs button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .db-tree { font-size: 0.78rem; color: var(--text-secondary); background: var(--surface-page); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-top: 16px; }
+  .db-tree ul { list-style: none; margin: 0; padding-left: 16px; }
+  .db-tree li { margin: 3px 0; position: relative; }
+  .db-tree li.visible > .db-tree-label { color: var(--series-2); font-weight: 700; }
+  .db-legend-list { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.74rem; color: var(--text-secondary); margin-top: 8px; }
+  .db-legend-list .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand"><a href="../../" style="color:inherit">viz<span>_</span>study</a></div>
+    <nav>
+      <a class="back-link" href="../../">← 一覧に戻る</a>
+      <button class="theme-toggle" data-theme-toggle type="button"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Drillboards: Adaptive Visualization Dashboards for Dynamic Personalization of Visualization Experiences</h1>
+  <div class="meta">
+    Sungbok Shin, Inyoup Na, Niklas Elmqvist（IEEE TVCG, 2024/2025） ・
+    <a href="https://arxiv.org/abs/2410.12744" target="_blank" rel="noopener">arXiv:2410.12744</a>
+  </div>
+  <div>
+    <span class="tag">HCI</span>
+    <span class="tag">Visualization</span>
+    <span class="tag">Dashboards</span>
+  </div>
+
+  <h2>一言でいうと</h2>
+  <p>
+    ダッシュボードを「詳細 ⇔ 抽象」の<strong>階層（木構造）</strong>として設計し、見る人が自分の専門知識・目的・
+    かけたい時間に応じて好きな粒度まで<strong>ドリルダウン／ロールアップ</strong>できるようにする手法
+    「drillboards」を提案した論文。同じ1つのダッシュボードを、初心者にも専門家にも使えるように
+    パーソナライズできる。
+  </p>
+
+  <h2>解きたかった問題</h2>
+  <p>
+    従来のダッシュボードは特定の対象者・目的のために固定レイアウトで作られており、「想定と違うユーザーが見る」
+    「同じユーザーでも今日は概要だけ見たい／別の日は深掘りしたい」といった状況に弱い。かといって画面や
+    ページ数を増やすと閲覧コストが上がる。<strong>画面スペースを増やさずに、多様な専門度・タスクに対応したい</strong>、
+    というのが出発点。
+  </p>
+
+  <h2>提案手法の核心</h2>
+  <p>
+    ダッシュボードを「チャートアトム（末端の個々のチャート）」の集合とみなし、複数のチャートを1つの
+    「パイル（束）」にまとめる<strong>6種類の統合演算子</strong>を定義する：
+  </p>
+  <ul>
+    <li><strong>Label（ラベル化）</strong>：複数チャートを平均値などの代表的な数値・テキスト1つに置き換える</li>
+    <li><strong>Summarize（要約）</strong>：複数系列を足し算・引き算・平均などで1系列に演算してまとめる</li>
+    <li><strong>Archetype（代表選択）</strong>：複数チャートのうち1つを選び、グループ全体の代表として見せる</li>
+    <li><strong>Projection（射影）</strong>：複数の次元を散布図・平行座標プロットの軸に写像する</li>
+    <li><strong>Juxtaposition（並置）</strong>：複数チャートをスモールマルチプルとして1つの枠にまとめる（情報損失なし）</li>
+    <li><strong>Overlay（重ね合わせ）</strong>：同じ軸を持つ複数チャートを1つの座標系に重ねて描く</li>
+  </ul>
+  <p>
+    ベースライン（全チャートがバラバラの状態）からこれらの演算を繰り返し適用すると、最終的に
+    <strong>ルートが1枚の要約チャートになる木構造</strong>ができあがる。閲覧者はこの木を
+    ドリルダウン（1枚のパイルを子チャート群に展開）／ロールアップ（子チャート群を親のパイルに畳む）
+    することで、同じデータを好きな抽象度で見られる。著者らはこれを実装したオーサリング/閲覧ツール
+    「DrillVis」も構築した。
+  </p>
+
+  <h2>触って理解する：ミニ Drillboard を組み立てる</h2>
+  <p class="db-hint">
+    6地域ぶんの月次データ（チャートアトム）を、演算子で統合してツリーを組み立ててみましょう。
+    1つのルートまでまとめたら「Reader モード」に切り替えて、実際にドリルダウン／ロールアップを試せます。
+  </p>
+
+  <div class="callout note-source">
+    ※ 表示している数値は説明用に作成した<strong>合成データ</strong>です（架空の地域別月次売上指数）。
+    論文中の実データ・実験結果ではありません。演算のロジック（平均・代表選択・重ね合わせ等）は
+    論文で定義された6種の統合演算子のうち、実装が容易な5種（Label / Summarize / Archetype /
+    Juxtaposition / Overlay）を再現しています。Projection（散布図への射影）は本デモでは省略しています。
+  </div>
+
+  <div class="demo-panel">
+    <div id="drillboard-demo"></div>
+  </div>
+
+  <h2>結果・インパクト</h2>
+  <p>
+    3名のドメインエキスパート（財政データ分析者、行政官、地域格差研究者）が実際に自分のデータで
+    drillboardを作成し、10名の一般ユーザーがそれを読んで質問に答える評価を実施。一般ユーザーは
+    ほぼ全員が10分以内に正答でき、特に「チャート数の少ない初心者向けビュー」を好んで使う傾向が見られた。
+    エキスパートからも「抽象度を上げた見せ方でメッセージを効果的に伝えられる」と好評だった。
+  </p>
+
+  <h2>限界・批判点</h2>
+  <ul>
+    <li><strong>視覚的な安定性の欠如</strong>：ドリルダウン／ロールアップのたびにチャートの並びや見た目が
+      変わるため、ユーザーのメンタルマップが崩れて混乱を招くことがあった（著者ら自身が主要な限界として言及）。</li>
+    <li>演算子の組み合わせによっては集約の意味が曖昧になり、システム側で一部の統合を機械的に禁止している
+      （例：すでに射影で作られたチャートと重ね合わせで作られたチャートを、さらに算術的に統合するのは不可）。</li>
+    <li>現状は表形式データのみ対応。ネットワーク図など複雑な可視化には未対応。</li>
+    <li>階層構築は基本的に著者が手作業で演算子を選ぶ必要があり、完全自動化はされていない
+      （論文では「チャート間の距離とクラスタリングで自動生成できる可能性」に言及するのみ）。</li>
+  </ul>
+
+  <h2>学び・所感</h2>
+  <p>
+    ズームやフィルタのような「同じ表現のまま見る範囲を変える」インタラクションと違い、
+    drillboardsは<strong>「チャートそのものを別の表現へと合成・分解する」演算子の語彙</strong>として
+    抽象度の切り替えを定式化した点が新しい。可視化を1人のユーザー・1つの目的に最適化するのではなく、
+    「同じ資産を複数の見方に開く」という発想は、日々のレポーティングやダッシュボード設計にも応用できそうだと感じた。
+    一方で著者らも認める通り、階層をどう安定して提示するかはUI設計として難しく、このデモでも
+    ドリルダウン後にレイアウトが変わる体験を実際に触ることで実感できる。
+  </p>
+
+  <div class="callout">
+    改善提案・指摘があれば
+    <a href="https://github.com/on6848/viz_study/issues" target="_blank" rel="noopener">Issues</a> へどうぞ。
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">viz_study — a daily paper reading log with runnable visual demos.</div>
+</footer>
+
+<div id="tooltip" role="tooltip" style="position:fixed;pointer-events:none;opacity:0"></div>
+<script src="../../assets/js/site.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>
