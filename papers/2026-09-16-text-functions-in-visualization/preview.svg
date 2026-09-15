@@ -1,0 +1,18 @@
+<svg viewBox="0 0 260 84" preserveAspectRatio="xMidYMid meet" role="presentation" aria-hidden="true">
+  <rect x="10" y="8" width="130" height="10" rx="2" fill="var(--text-primary)" opacity="0.85"></rect>
+  <rect x="10" y="22" width="90" height="6" rx="2" fill="var(--text-secondary)" opacity="0.55"></rect>
+
+  <polyline points="14,68 44,60 74,64 104,44 134,58 164,50 194,40 224,34"
+            fill="none" stroke="var(--series-1)" stroke-width="2.2"></polyline>
+  <line x1="14" y1="52" x2="224" y2="46" stroke="var(--text-muted)" stroke-width="1.2" stroke-dasharray="3 2"></line>
+
+  <circle cx="104" cy="44" r="3" fill="var(--series-1)"></circle>
+  <line x1="104" y1="44" x2="128" y2="24" stroke="var(--series-2)" stroke-width="1.2"></line>
+  <rect x="126" y="14" width="60" height="12" rx="2" fill="var(--series-2)" opacity="0.18" stroke="var(--series-2)" stroke-dasharray="2 2"></rect>
+
+  <circle cx="164" cy="50" r="3" fill="var(--series-1)"></circle>
+  <rect x="150" y="58" width="36" height="9" rx="2" fill="var(--surface-1)" stroke="var(--border)"></rect>
+
+  <circle cx="224" cy="34" r="3" fill="var(--series-1)"></circle>
+  <rect x="196" y="66" width="46" height="9" rx="2" fill="var(--series-8)" opacity="0.16" stroke="var(--series-8)"></rect>
+</svg>

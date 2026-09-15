@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>An Analysis of Text Functions in Information Visualization — viz_study</title>
+<meta name="description" content="同じグラフを「物語的に見せる」か「注釈中心で見せる」かで、テキストが果たす役割がどう変わるかを触って確認する。">
+<link rel="stylesheet" href="../../assets/css/style.css?v=20260916b">
+<style>
+  .tf-mode-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tf-tab {
+    background: var(--surface-page); border: 1px solid var(--border); border-radius: 999px;
+    font-size: 0.82rem; padding: 5px 14px; cursor: pointer; color: var(--text-secondary);
+  }
+  .tf-tab[aria-pressed="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .tf-mode-desc { color: var(--text-secondary); font-size: 0.88rem; margin: 0 0 14px; }
+
+  .tf-chart-card { background: var(--surface-page); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .tf-text-top { margin-bottom: 6px; }
+  .tf-text-bottom { margin-top: 4px; }
+  .tf-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+  .tf-subtitle { font-size: 0.88rem; color: var(--text-secondary); margin-top: 3px; }
+  .tf-caption { font-size: 0.74rem; color: var(--text-muted); }
+  #tf-svg { width: 100%; display: block; margin: 6px 0; }
+
+  .tf-tagged { cursor: help; border-radius: 3px; transition: outline-color 0.1s ease; outline: 1.5px dashed transparent; outline-offset: 2px; }
+  .tf-tagged:hover { outline-color: var(--series-1); }
+  .tf-highlight { outline: 1.5px solid var(--series-2) !important; background: var(--series-2); color: #fff !important; }
+  .tf-dim { opacity: 0.28; }
+
+  .tf-legend-title { margin: 28px 0 10px; font-size: 1rem; }
+  .tf-legend { display: grid; gap: 6px; }
+  .tf-legend-row {
+    display: grid; grid-template-columns: 200px 1fr 70px; gap: 10px; align-items: center;
+    text-align: left; background: var(--surface-page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; cursor: pointer; font-size: 0.82rem; color: var(--text-primary);
+  }
+  .tf-legend-row:hover { border-color: var(--series-1); }
+  .tf-legend-row[aria-pressed="true"] { border-color: var(--series-2); box-shadow: inset 0 0 0 1px var(--series-2); }
+  .tf-legend-row.tf-legend-row-empty { color: var(--text-muted); }
+  .tf-legend-label { font-weight: 600; }
+  .tf-legend-def { color: var(--text-secondary); font-size: 0.78rem; }
+  .tf-legend-count { text-align: right; font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; }
+  @media (max-width: 640px) {
+    .tf-legend-row { grid-template-columns: 1fr; text-align: left; }
+    .tf-legend-count { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand"><a href="../../" style="color:inherit">viz<span>_</span>study</a></div>
+    <nav>
+      <a class="back-link" href="../../">← 一覧に戻る</a>
+      <button class="theme-toggle" data-theme-toggle type="button"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>An Analysis of Text Functions in Information Visualization</h1>
+  <div class="meta">
+    Chase Stokes, Anjana Arunkumar, Marti A. Hearst, Lace Padilla（2025） ・
+    <a href="https://arxiv.org/abs/2507.12334" target="_blank" rel="noopener">arXiv:2507.12334</a>
+  </div>
+  <div>
+    <span class="tag">HCI</span>
+    <span class="tag">Information Visualization</span>
+    <span class="tag">Text / Language</span>
+  </div>
+
+  <h2>一言でいうと</h2>
+  <p>
+    タイトル・注釈・キャプションなど、可視化に添えられる「テキスト」が実際にどんな役割を果たしているかを、
+    120個の実在の可視化・804個のテキスト要素を分析して整理した論文。<strong>10種類の「テキスト機能」</strong>
+    を定義し、それらの組み合わせから<strong>4つのデザインパターン（因子）</strong>を見出した。
+  </p>
+
+  <h2>解きたかった問題</h2>
+  <p>
+    可視化における視覚的なエンコーディング（軸・色・形など）については多くの設計指針があるのに対し、
+    テキストの使い方はデザイナーの直感や慣習に任されがちで、体系的な理解が遅れていた。
+    「このタイトルは何をしているのか」「この注釈は本文の代わりになっているのか」といった、
+    <strong>テキスト要素が果たす具体的な役割（機能）を分類する共通言語</strong>が欠けていた。
+  </p>
+
+  <h2>提案手法の核心</h2>
+  <p>
+    テキストの「機能」を<strong>動詞＋対象</strong>（例：Identify（示す）+ Mappings（対応関係））という形式で定義し、
+    質的コーディングを通じて次の10種類に整理した：Identify Mappings／Identify Values／Present Metadata／
+    Replace Mappings／Compare Mappings／Compare Values／Summarize Values／Summarize Concepts
+    （Synthesis・Variablesの2種）／Present Context／Present Valenced Subtext。
+    さらに、どの機能がどう組み合わさって出現するかを因子分析にかけ、
+    <strong>Attribution and Variables／Annotation-Centric Design／Visual Embellishments／Narrative Framing</strong>
+    という4つの代表的なデザインパターンを特定した。1つのテキスト要素が複数の機能を同時に果たすこと
+    （多機能性）も重要な発見の一つ。
+  </p>
+
+  <h2>触って理解する：同じデータ、2つのテキスト戦略</h2>
+  <p style="color:var(--text-secondary);font-size:0.92rem;margin-bottom:10px">
+    論文Fig.2の実例（同じ経済指標のチャートを、物語的な見出しで見せるか、注釈中心で見せるかを比較した例）に
+    ならい、架空の国のデータで同じ比較を再現しました。下のタブでデザインを切り替え、テキスト要素にカーソルを
+    合わせる（またはクリックする）とその要素が果たしている機能が表示されます。凡例の機能名をクリックすると、
+    現在のデザインでその機能を果たしている箇所がハイライトされます。
+  </p>
+
+  <div class="callout note-source">
+    ※ ここで使っているチャートのタイトル・注釈・数値はすべて説明用に作成した<strong>架空のデータ</strong>です
+    （論文中の実データ・実際のデザイン事例ではありません）。テキスト機能の定義・因子（F2/F4）の特徴づけは
+    論文のTable 2・Section 5の内容に基づいています。
+  </div>
+
+  <div class="demo-panel">
+    <div id="textfn-demo"></div>
+  </div>
+
+  <h2>結果・インパクト</h2>
+  <p>
+    分析の結果、タイトルは単に「何のグラフか」を示すだけでなく、要約・比較・感情的なニュアンスづけを
+    同時に行う「多機能」な要素であることが多いと判明。また、
+    <strong>Replace Mappings（対応関係を代替する）</strong>という、軸やレジェンドの代わりにテキストが
+    その役割を担うパターンは、既存の分類学ではほとんど扱われてこなかった新しい発見として強調されている。
+    因子分析では、報道機関のグラフィックに多い「注釈中心」パターンと、社会的・政治的な話題でよく見られる
+    「物語的枠付け」パターンなど、出典の種類とテキスト戦略の間に明確な相関があることも示された。
+  </p>
+
+  <h2>限界・批判点</h2>
+  <ul>
+    <li>分析対象の120個の可視化は主に既存研究や報道系のコーパスに由来しており、最新のSNS発の
+      可視化トレンドなどを十分に反映していない可能性がある。</li>
+    <li><strong>Present Valenced Subtext</strong>（感情的なニュアンス）の判定は、実際のデザイナーの意図では
+      なく研究者自身の解釈に基づいており、主観性が残る。</li>
+    <li>コーパスが報道系可視化に偏っているため、学術・ビジネスダッシュボードなど他分野への一般化には
+      注意が必要（著者ら自身が明記）。</li>
+  </ul>
+
+  <h2>学び・所感</h2>
+  <p>
+    これまで「タイトルをつける」「注釈を入れる」といった作業を感覚的に行ってきた部分に、
+    <strong>「このテキストは何をしているのか」を動詞で言語化する</strong>という視点を与えてくれる論文だと感じた。
+    特に、テキストが軸やレジェンドを代替できる（Replace Mappings）という指摘は、
+    「データを削らずに視覚的なノイズを減らす」実践的なテクニックとしてもすぐに使えそうだと思う。
+    可視化のレビューをする際に「このタイトルは要約なのか、それとも感情的な誘導なのか」を意識的に
+    問い直すきっかけになりそうだ。
+  </p>
+
+  <div class="callout">
+    改善提案・指摘があれば
+    <a href="https://github.com/on6848/viz_study/issues" target="_blank" rel="noopener">Issues</a> へどうぞ。
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">viz_study — a daily paper reading log with runnable visual demos.</div>
+</footer>
+
+<div id="tooltip" role="tooltip" style="position:fixed;pointer-events:none;opacity:0"></div>
+<script src="../../assets/js/site.js?v=20260916b"></script>
+<script src="demo.js?v=1"></script>
+</body>
+</html>

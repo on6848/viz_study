@@ -25,5 +25,14 @@
     "arxivUrl": "https://osf.io/w3fev/",
     "oneLiner": "小さな部分グラフだけを何度も厳密に解き直す（LNS）ことで、レイヤー配置のネットワーク図を制限時間内で素早く読みやすくする手法。",
     "tags": ["Graph Drawing", "Optimization", "Metaheuristic"]
+  },
+  {
+    "slug": "2026-09-16-text-functions-in-visualization",
+    "date": "2026-09-16",
+    "title": "An Analysis of Text Functions in Information Visualization",
+    "authors": "Stokes, Arunkumar, Hearst & Padilla, 2025",
+    "arxivUrl": "https://arxiv.org/abs/2507.12334",
+    "oneLiner": "タイトルや注釈などテキスト要素の役割を10種の「機能」に整理し、そこから4つのデザインパターンを見出した分析。",
+    "tags": ["HCI", "Information Visualization", "Text / Language"]
   }
 ]
