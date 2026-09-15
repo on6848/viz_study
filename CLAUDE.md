@@ -52,3 +52,9 @@
   揃える。フレームワーク追加やビルドツール導入はしない（ビルド不要の静的サイトを維持する）。
 - **公開**: GitHub Pages（`main`ブランチ、root）を想定。Pages未設定ならユーザーに設定を促す
   （Settings → Pages → Source: `main` / `/`）。
+- **キャッシュ対策**: 全ページの `assets/css/style.css` / `assets/js/site.js` の読み込みには
+  `?v=YYYYMMDDx` のクエリを付けている（例: `?v=20260916a`）。これら共有ファイルを変更したら、
+  参照している全HTML（`index.html`、`papers/*/index.html`、`papers/_template/index.html`）の
+  バージョン文字列を新しい値に一括で上げること（さもないとブラウザ/GitHub PagesのCDNキャッシュにより
+  古い見た目のまま反映されないことがある）。`papers.json` は `assets/js/site.js` 側で
+  タイムスタンプ付きfetchをしているため個別のバージョニングは不要。
