@@ -34,5 +34,14 @@
     "arxivUrl": "https://arxiv.org/abs/2507.12334",
     "oneLiner": "タイトルや注釈などテキスト要素の役割を10種の「機能」に整理し、そこから4つのデザインパターンを見出した分析。",
     "tags": ["HCI", "Information Visualization", "Text / Language"]
+  },
+  {
+    "slug": "2026-09-16-ponzilens",
+    "date": "2026-09-16",
+    "title": "PonziLens+: Visualizing Bytecode Actions for Smart Ponzi Scheme Identification",
+    "authors": "Wen, Nguyen, Ruan, Shen, Sun, Zhu & Wang, 2024",
+    "arxivUrl": "https://arxiv.org/abs/2412.18470",
+    "oneLiner": "スマートコントラクトの実行パスを意味のあるアクション列に変換し、Ponziスキームの兆候を根拠つきで可視化するツール。",
+    "tags": ["HCI", "Visual Analytics", "Blockchain Security"]
   }
 ]

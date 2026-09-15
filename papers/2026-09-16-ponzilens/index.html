@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PonziLens+ — viz_study</title>
+<meta name="description" content="スマートコントラクトのバイトコード実行パスを可視化して、Ponziスキームの兆候を見つける手法を、実際に経路を辿って体験する。">
+<link rel="stylesheet" href="../../assets/css/style.css?v=20260916b">
+<style>
+  .pl-h { font-size: 0.95rem; margin: 22px 0 4px; }
+  .pl-hint { color: var(--text-secondary); font-size: 0.86rem; margin: 0 0 10px; }
+  #pl-sankey { width: 100%; max-width: 500px; display: block; background: var(--surface-page); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 6px; }
+  .pl-group-label { font-size: 0.9rem; margin: 4px 0 4px; }
+  .pl-verdict { color: var(--text-secondary); font-size: 0.86rem; background: var(--surface-page); border-left: 3px solid var(--series-2); border-radius: 4px; padding: 8px 12px; margin-bottom: 10px; }
+  #pl-sequence { width: 100%; display: block; background: var(--surface-page); border: 1px solid var(--border); border-radius: 10px; }
+  .pl-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.76rem; color: var(--text-secondary); margin-top: 10px; }
+  .pl-legend .pl-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  .pl-legend .pl-ring { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--text-primary); margin-right: 5px; vertical-align: -1px; }
+  .pl-legend .pl-dashed { display: inline-block; width: 16px; height: 10px; border: 1.6px dashed var(--series-7); border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .pl-legend .pl-line { display: inline-block; width: 16px; height: 2px; background: var(--text-primary); margin-right: 5px; vertical-align: 2px; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand"><a href="../../" style="color:inherit">viz<span>_</span>study</a></div>
+    <nav>
+      <a class="back-link" href="../../">← 一覧に戻る</a>
+      <button class="theme-toggle" data-theme-toggle type="button"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>PonziLens+: Visualizing Bytecode Actions for Smart Ponzi Scheme Identification</h1>
+  <div class="meta">
+    Xiaolin Wen, Tai D. Nguyen, Shaolun Ruan, Qiaomu Shen, Jun Sun, Feida Zhu, Yong Wang（2024） ・
+    <a href="https://arxiv.org/abs/2412.18470" target="_blank" rel="noopener">arXiv:2412.18470</a>
+  </div>
+  <div>
+    <span class="tag">HCI</span>
+    <span class="tag">Visual Analytics</span>
+    <span class="tag">Blockchain Security</span>
+  </div>
+
+  <h2>一言でいうと</h2>
+  <p>
+    ブロックチェーン上のスマートコントラクトの「バイトコード」を実行シミュレーションし、そこから得られる
+    実行パス（起こりうる処理の流れ）を、投資家や監査者が<strong>詐欺（Ponziスキーム）の兆候を目で確認</strong>
+    しながら判断できるように可視化するツール<strong>PonziLens+</strong>を提案した論文。
+  </p>
+
+  <h2>解きたかった問題</h2>
+  <p>
+    Ponziスキーム（自転車操業型の投資詐欺）は、新規投資者の資金を既存投資者への配当に回す典型的な詐欺の
+    仕組みで、スマートコントラクトの形でブロックチェーン上に多数存在する。既存の自動検知手法は
+    (1) 決め打ちのルールや学習済みモデルに頼るため新しい手口に弱く（適応性の欠如）、
+    (2) 「なぜ詐欺と判定したか」の根拠を人間にわかる形で示せない（透明性の欠如）、という2つの課題があった。
+    投資家が自分で納得して判断できる、<strong>根拠が見える検知手法</strong>が必要とされていた。
+  </p>
+
+  <h2>提案手法の核心</h2>
+  <p>
+    まず、スマートコントラクトのバイトコードをシンボリック実行し、起こりうる実行パスを、
+    「情報を書き込む（Write）」「送金する（Payment）」「条件を確認する（Check）」「情報を読み取る（Read）」
+    という4種類の<strong>意味のある「アクション」の列</strong>に変換する。そのうえで、
+    投資者アドレスの記録・送金の実行・繰り返し（ループ）・過去の投資者への還元、という
+    <strong>4つの"Ponzi特徴"</strong>がアクション列の中でどう現れるかに注目し、3段階の粒度で可視化する：
+  </p>
+  <ol>
+    <li><strong>Path Feature Module（契約全体）</strong>: 全実行パスを4つのPonzi特徴でグループ化し、
+      パラレルセッツ図でその分布を俯瞰する。</li>
+    <li><strong>Path Grouping Module（パスグループ）</strong>: 選んだグループのアクション列を統合して要約し、
+      Ponzi特徴が現れる箇所（ループ・還元の繋がりなど）を強調表示する。</li>
+    <li><strong>Execution Detail Module（個別パス）</strong>: 1本の実行パスについて、ストレージへの
+      読み書きの詳細をアクション列とあわせて表示する（本デモでは省略、下記参照）。</li>
+  </ol>
+
+  <h2>触って理解する：架空のコントラクトの実行パスを辿る</h2>
+  <p style="color:var(--text-secondary);font-size:0.92rem;margin-bottom:8px">
+    架空の小さなスマートコントラクトを例に、Path Feature ModuleとPath Grouping Moduleを体験できます。
+    上のパラレルセッツ図でグループ（帯）をクリックすると、そのグループの典型的なアクション列が下に表示され、
+    ループや"還元"のつながりが視覚的にわかります。安全に見える経路から、典型的なPonziパターンまで
+    見比べてみてください。
+  </p>
+
+  <div class="callout note-source">
+    ※ ここで使っているコントラクト・実行パス・件数はすべて説明用に作成した<strong>架空のデータ</strong>です
+    （論文の実験対象・ケーススタディの実データではありません）。可視化の設計（配色・アイコン・強調表現）は
+    論文のFig. 4・Fig. 5に基づいていますが、実装は簡略化しています。特に<strong>Execution Detail Module</strong>
+    （1本のパスのストレージ操作を二重らせん状に描く詳細ビュー）は本デモには含まれていません。
+  </div>
+
+  <div class="demo-panel">
+    <div id="ponzi-demo"></div>
+  </div>
+
+  <h2>結果・インパクト</h2>
+  <p>
+    実際のPonziスキーム契約を含む2つのケーススタディと、専門家・一般投資家あわせて12名のユーザーインタビューで
+    評価。参加者全員が「これほど納得感のある根拠を示すツールは他になかった」と回答し、特に専門家は
+    監査業務での有用性を高く評価した。一方で、Path Grouping Moduleは他のモジュールよりやや評価が低く
+    （7点満点中5.5点）、「強調表示されていないアクションの意味が分かりにくい」という指摘もあった。
+    一般投資家からは、Ponziスキームの典型パターンそのものへの知識不足を補うチュートリアルの充実が求められた。
+  </p>
+
+  <h2>限界・批判点</h2>
+  <ul>
+    <li>実行パスの数が非常に多い複雑な契約では、パスの統合・グループ化を行ってもなお
+      スケーラビリティの課題が残る（著者ら自身が言及）。</li>
+    <li>この手法が対象とするのは<strong>コード自体に不正なロジックが埋め込まれたPonziスキーム</strong>であり、
+      PlusTokenのように詐欺のロジックがオンチェーン外にある事例には対応できない。</li>
+    <li>シンボリック実行の技術的な限界（ガス制限を考慮しないため実行不能なパスも探索してしまう、
+      Z3ソルバーが解けないパスを見逃す可能性がある等）が、検知の網羅性に影響しうる。</li>
+  </ul>
+
+  <h2>学び・所感</h2>
+  <p>
+    自動判定の結果だけを提示するのではなく、「なぜそう判断できるのか」を人間が追える形で可視化するという
+    アプローチが印象的だった。特に、投資者のアドレスを書き込んだのと<strong>同じストレージスロット</strong>から
+    送金先を読み出しているかどうかを繋いで見せる（Rewarding特徴の可視化）ことで、
+    「新規資金をそのまま過去の投資者に回している」という詐欺の本質的な仕組みを、コードを読めない人にも
+    直感的に伝えられる点が優れていると感じた。セキュリティ・監査ツールにおいて「判定結果」ではなく
+    「判定の根拠となる構造」を見せるという設計思想は、他の不正検知の可視化にも応用できそうだ。
+  </p>
+
+  <div class="callout">
+    改善提案・指摘があれば
+    <a href="https://github.com/on6848/viz_study/issues" target="_blank" rel="noopener">Issues</a> へどうぞ。
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">viz_study — a daily paper reading log with runnable visual demos.</div>
+</footer>
+
+<div id="tooltip" role="tooltip" style="position:fixed;pointer-events:none;opacity:0"></div>
+<script src="../../assets/js/site.js?v=20260916b"></script>
+<script src="demo.js?v=1"></script>
+</body>
+</html>
