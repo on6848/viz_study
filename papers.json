@@ -43,5 +43,14 @@
     "arxivUrl": "https://arxiv.org/abs/2412.18470",
     "oneLiner": "スマートコントラクトの実行パスを意味のあるアクション列に変換し、Ponziスキームの兆候を根拠つきで可視化するツール。",
     "tags": ["HCI", "Visual Analytics", "Blockchain Security"]
+  },
+  {
+    "slug": "2026-09-16-streetweave",
+    "date": "2026-09-16",
+    "title": "StreetWeave: A Declarative Grammar for Street-Overlaid Visualization of Multivariate Data",
+    "authors": "Srabanti, Marai & Miranda, 2025",
+    "arxivUrl": "https://arxiv.org/abs/2508.07496",
+    "oneLiner": "道路網に多変量データを重ねる可視化を、コードなしでmethod・色・太さなどの宣言的な指定だけで組み立てられる文法。",
+    "tags": ["HCI", "Urban Visual Analytics", "Visualization Grammar"]
   }
 ]

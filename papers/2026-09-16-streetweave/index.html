@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StreetWeave — viz_study</title>
+<meta name="description" content="道路網に多変量データを重ねる可視化を、コードなしで宣言的に組み立てられる文法。同じデータをmethod/channelの切替だけで別の見た目に変えて体験する。">
+<link rel="stylesheet" href="../../assets/css/style.css?v=20260916b">
+<style>
+  .sw-controls { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; }
+  .sw-ctrl-label { display: block; font-size: 0.74rem; color: var(--text-muted); margin-bottom: 4px; }
+  .sw-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
+  .sw-tab {
+    background: var(--surface-page); border: 1px solid var(--border); border-radius: 999px;
+    font-size: 0.76rem; padding: 4px 10px; cursor: pointer; color: var(--text-secondary);
+  }
+  .sw-tab[aria-pressed="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .sw-note { color: var(--text-muted); font-size: 0.78rem; margin: 4px 0 10px; }
+
+  .sw-main { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; margin-top: 10px; }
+  #sw-svg { width: 300px; height: 300px; background: var(--surface-page); border: 1px solid var(--border); border-radius: 10px; flex: 0 0 300px; }
+  .sw-spec { flex: 1 1 220px; min-width: 200px; }
+  .sw-spec-title { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+  .sw-spec pre {
+    background: var(--code-bg); border-radius: 8px; padding: 12px; font-size: 0.78rem;
+    color: var(--text-primary); overflow-x: auto; margin: 0;
+  }
+  .sw-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.76rem; color: var(--text-secondary); margin-top: 12px; }
+  .sw-swatch { display: inline-block; width: 40px; height: 8px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .sw-dash { display: inline-block; width: 20px; height: 2px; border-top: 2px dashed var(--text-primary); margin-right: 5px; vertical-align: 2px; }
+  .sw-wave { margin-right: 5px; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand"><a href="../../" style="color:inherit">viz<span>_</span>study</a></div>
+    <nav>
+      <a class="back-link" href="../../">← 一覧に戻る</a>
+      <button class="theme-toggle" data-theme-toggle type="button"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>StreetWeave: A Declarative Grammar for Street-Overlaid Visualization of Multivariate Data</h1>
+  <div class="meta">
+    Sanjana Srabanti, G. Elisabeta Marai, Fabio Miranda（2025） ・
+    <a href="https://arxiv.org/abs/2508.07496" target="_blank" rel="noopener">arXiv:2508.07496</a> ・
+    <a href="https://urbantk.org/streetweave" target="_blank" rel="noopener">プロジェクトページ</a>
+  </div>
+  <div>
+    <span class="tag">HCI</span>
+    <span class="tag">Urban Visual Analytics</span>
+    <span class="tag">Visualization Grammar</span>
+  </div>
+
+  <h2>一言でいうと</h2>
+  <p>
+    道路や歩行者ネットワークの上に人口統計・汚染度・騒音などのデータを重ねて描く「道路重畳可視化」を、
+    コードを書かずに<strong>JSON風の宣言的な仕様</strong>で組み立てられるグラマー
+    <strong>StreetWeave</strong>を提案した論文。線・棒・グリッドといった見せ方（method）や、
+    色・太さ・破線といった見た目（チャンネル）をデータ属性に割り当てるだけで、同じ道路網・同じデータから
+    多様な可視化を作れる。
+  </p>
+
+  <h2>解きたかった問題</h2>
+  <p>
+    道路上にデータを重ねる可視化（1854年のジョン・スノウのコレラ地図が有名な原型）は、都市計画・気候研究・
+    公衆衛生など幅広い分野で使われているが、共通の設計フレームワークが存在しなかった。分野ごとに
+    研究者と可視化エンジニアが個別に作り込む「一点もの」の実装になりがちで、
+    <strong>再利用や他地域への転用が難しく、プログラミングの知識がない専門家には参入障壁が高い</strong>
+    という課題があった。
+  </p>
+
+  <h2>提案手法の核心</h2>
+  <p>
+    著者らはまず、道路重畳可視化を使った45本の既存研究を分析し、分析目的・可視化手法・データソースの
+    3つの観点から設計空間を整理した。それをもとに設計したのが宣言的グラマー StreetWeave で、
+    次のような要素を組み合わせてビジュアライゼーションを指定する：
+  </p>
+  <ul>
+    <li><strong>unit（対象の粒度）</strong>：<code>segment</code>（道路の区間）・<code>node</code>（交差点）・
+      <code>point</code>（個別地点）</li>
+    <li><strong>method（見せ方）</strong>：<code>line</code>（線）・<code>rect</code>（棒/剛毛状）・
+      <code>matrix</code>（小さなグリッド）</li>
+    <li><strong>チャンネル</strong>：<code>color</code>・<code>width</code>・<code>height</code>・
+      <code>opacity</code>・<code>dash</code>（破線）・<code>squiggle</code>（波線）などをデータ属性に割り当て</li>
+    <li><strong>orientation / alignment</strong>：道路に対して平行か垂直か、グリフの向きを指定</li>
+    <li><strong>relation</strong>：<code>buffer</code>・<code>nearest neighbor</code>・<code>contains</code>
+      といった空間的な結合方法と、<code>sum/mean/min/max</code>による集計</li>
+  </ul>
+  <p>
+    さらに<code>chart</code>プロパティでVega-Lite仕様を道路の各区間に直接埋め込むこともでき、
+    棒グラフなどの複雑な多変量表現も道路の向きに沿わせて配置できる。
+  </p>
+
+  <h2>触って理解する：同じ道路網、3つの見せ方</h2>
+  <p style="color:var(--text-secondary);font-size:0.92rem;margin-bottom:10px">
+    架空の道路網（3×3の交差点からなる12区間）に、交通量・騒音レベル・歩行者数という3つの属性を
+    持たせています。下のコントロールで<code>method</code>やチャンネルの割り当てを変えると、
+    同じデータ・同じ道路網でも見た目が大きく変わることが分かります。右側には、その時点の
+    グラマー仕様（簡略版）が表示されます。
+  </p>
+
+  <div class="callout note-source">
+    ※ ここで使っている道路網・属性値はすべて説明用に作成した<strong>架空のデータ</strong>です
+    （論文の実データ・実際の都市のデータではありません）。実際のStreetWeaveは実在の道路網データと
+    複数の主題データを空間的な関係（buffer/nearest neighbor/contains）で結合しますが、このデモは
+    その結合ステップを省略し、あらかじめ各区間に値が紐づいた状態から始めています。
+    また<code>chart</code>（Vega-Lite埋め込み）や<code>node</code>/<code>point</code>単位は
+    このデモには含まれていません。
+  </div>
+
+  <div class="demo-panel">
+    <div id="sw-demo"></div>
+  </div>
+
+  <h2>結果・インパクト</h2>
+  <p>
+    著者らは、歩道のアクセシビリティ、大気汚染、犯罪・311通報データなど複数の実データを使った
+    利用シナリオを通じて、StreetWeaveが多様な道路重畳可視化を少ない記述量で再現できることを示した。
+    45本の既存研究のレビューに基づく設計空間の整理そのものも、この分野で初めての体系的な貢献として
+    位置づけられている。
+  </p>
+
+  <h2>限界・批判点</h2>
+  <ul>
+    <li>設計空間の分析対象は既存の45本の研究に限られており、まだ論文になっていない実務的な
+      可視化事例までは網羅していない可能性がある。</li>
+    <li>グラマーの表現力は「道路網上への重畳」という枠組みに最適化されているため、道路網以外の
+      任意の空間構造（河川網や鉄道網など）への一般化には追加の検証が必要と考えられる。</li>
+    <li>宣言的な指定である程度の作業は簡略化されるものの、どのチャンネルにどの属性を割り当てるべきかという
+      デザイン判断（可読性やクラッター回避）自体は、依然としてユーザーの知識に依存する。</li>
+  </ul>
+
+  <h2>学び・所感</h2>
+  <p>
+    Vega-LiteやggplotのようなGrammar of Graphicsの考え方を、「道路網という特殊な空間構造」に
+    特化させて再構築している点が面白い。特に、道路の向きに対して「平行」か「垂直」かという
+    <code>orientation</code>の概念は、一般的なグラフ文法にはあまり出てこない、地理的な制約から
+    生まれた独自の設計要素だと感じた。可視化の見せ方を数個のプロパティの組み合わせとして分解する
+    という発想は、道路に限らず「線状のネットワークにデータを重ねたい」場面全般（配管網、河川、
+    鉄道路線など）に応用できそうだと思う。
+  </p>
+
+  <div class="callout">
+    改善提案・指摘があれば
+    <a href="https://github.com/on6848/viz_study/issues" target="_blank" rel="noopener">Issues</a> へどうぞ。
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">viz_study — a daily paper reading log with runnable visual demos.</div>
+</footer>
+
+<div id="tooltip" role="tooltip" style="position:fixed;pointer-events:none;opacity:0"></div>
+<script src="../../assets/js/site.js?v=20260916b"></script>
+<script src="demo.js?v=1"></script>
+</body>
+</html>

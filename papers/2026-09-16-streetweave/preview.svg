@@ -1,0 +1,20 @@
+<svg viewBox="0 0 260 84" preserveAspectRatio="xMidYMid meet" role="presentation" aria-hidden="true">
+  <line x1="20" y1="20" x2="240" y2="20" stroke="var(--gridline)" stroke-width="5"></line>
+  <line x1="20" y1="46" x2="240" y2="46" stroke="var(--gridline)" stroke-width="5"></line>
+  <line x1="70" y1="8" x2="70" y2="76" stroke="var(--gridline)" stroke-width="5"></line>
+  <line x1="150" y1="8" x2="150" y2="76" stroke="var(--gridline)" stroke-width="5"></line>
+
+  <line x1="20" y1="20" x2="70" y2="20" stroke="var(--seq-600)" stroke-width="6" stroke-linecap="round"></line>
+  <line x1="70" y1="20" x2="150" y2="20" stroke="var(--seq-300)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 3"></line>
+  <line x1="150" y1="20" x2="240" y2="20" stroke="var(--seq-500)" stroke-width="5" stroke-linecap="round"></line>
+
+  <line x1="20" y1="46" x2="70" y2="46" stroke="var(--seq-200)" stroke-width="4" stroke-linecap="round"></line>
+  <line x1="70" y1="46" x2="150" y2="46" stroke="var(--seq-700)" stroke-width="7" stroke-linecap="round"></line>
+  <line x1="150" y1="46" x2="240" y2="46" stroke="var(--seq-400)" stroke-width="5" stroke-linecap="round"></line>
+
+  <rect x="63" y="56" width="7" height="7" fill="var(--seq-500)"></rect>
+  <rect x="72" y="56" width="7" height="7" fill="var(--seq-300)"></rect>
+  <rect x="81" y="56" width="7" height="7" fill="var(--seq-600)"></rect>
+
+  <line x1="147" y1="30" x2="147" y2="10" stroke="var(--seq-500)" stroke-width="5" stroke-linecap="round"></line>
+</svg>
