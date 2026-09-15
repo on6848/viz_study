@@ -1,5 +1,7 @@
 # viz_study
 
+**🔗 公開サイト: https://on6848.github.io/viz_study/**
+
 毎日1本の論文を読み、自分の言葉でまとめ、その中核アイデアを**実際に操作できる可視化デモ**で
 直感的に理解できるようにする個人アーカイブです。ビルド不要の静的サイト（プレーンHTML/CSS/JS）で、
 GitHub Pagesでの公開を想定しています。
@@ -46,4 +48,5 @@ python3 -m http.server 8000
 
 ## 公開（GitHub Pages）
 
-Settings → Pages → Source を `main` ブランチ / `/ (root)` に設定してください。
+Settings → Pages → Source は `main` ブランチ / `/ (root)` で設定済みです。
+`main` に push するたびに https://on6848.github.io/viz_study/ に自動反映されます。
