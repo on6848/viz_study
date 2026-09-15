@@ -1,0 +1,10 @@
+<!--
+  トップページのカードに表示される縮小プレビュー。
+  ルールは papers/_template/README.md を参照（viewBox は 0 0 260 84、
+  色は必ず style.css の共通CSS変数を使う、静的でアニメーションなし、
+  demo.js の実際の見た目に似せる）。
+-->
+<svg viewBox="0 0 260 84" preserveAspectRatio="xMidYMid meet" role="presentation" aria-hidden="true">
+  <rect x="8" y="8" width="244" height="68" rx="6" fill="none" stroke="var(--border)" stroke-width="1"></rect>
+  <text x="130" y="46" text-anchor="middle" font-size="11" fill="var(--text-muted)">preview.svg を書き換える</text>
+</svg>
