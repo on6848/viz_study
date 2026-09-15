@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>viz_study — 論文を動かして読む</title>
+<meta name="description" content="毎日1本の論文を読み、自分の言葉でまとめ、実際に触れる可視化デモで直感的に理解するための個人アーカイブ。">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand">viz<span>_</span>study</div>
+    <nav>
+      <a href="https://github.com/on6848/viz_study" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-toggle" data-theme-toggle type="button"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>論文を、動かして読む。</h1>
+  <p class="lede">
+    毎日1本の論文を読み、自分の言葉で要約し、その中核アイデアを
+    <strong>実際に操作できる可視化デモ</strong>で直感的に理解できるようにしたアーカイブです。
+    要約と実装はすべてオリジナル（論文の図表・本文の転載はしません）。各エントリの末尾に出典を明記しています。
+  </p>
+
+  <h2>論文一覧</h2>
+  <div class="card-grid" data-paper-grid>
+    <p style="color:var(--text-muted)">読み込み中…</p>
+  </div>
+
+  <div class="callout" style="margin-top:40px">
+    <strong>このサイトについて：</strong>
+    各ページの要約・解説文および可視化コードは独自作成したものです。原論文の図・表・本文の引用は行わず、
+    伝えたい概念を自作の最小デモで再構成しています。データが必要な場合も、原論文のデータセットではなく
+    説明用に作成した合成データを用いています（各ページに明記）。誤りや改善提案は
+    <a href="https://github.com/on6848/viz_study/issues" target="_blank" rel="noopener">Issues</a> へ。
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">viz_study — a daily paper reading log with runnable visual demos.</div>
+</footer>
+
+<script src="assets/js/site.js"></script>
+</body>
+</html>

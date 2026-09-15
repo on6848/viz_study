@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attention Is All You Need — viz_study</title>
+<meta name="description" content="TransformerのSelf-Attentionを、実際に動かせるヒートマップで直感的に理解する。">
+<link rel="stylesheet" href="../../assets/css/style.css">
+<style>
+  /* Demo-specific styles, built on the shared design tokens from style.css */
+  .head-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .head-tab {
+    background: var(--surface-page);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .head-tab[aria-pressed="true"] {
+    background: var(--series-1);
+    border-color: var(--series-1);
+    color: #fff;
+  }
+  .head-desc { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 16px; min-height: 2.6em; }
+
+  .query-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .query-chip {
+    background: var(--surface-page);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+  .query-chip[aria-pressed="true"] {
+    border-color: var(--series-2);
+    box-shadow: inset 0 0 0 1px var(--series-2);
+    font-weight: 600;
+  }
+
+  .heatmap-wrap { position: relative; overflow-x: auto; }
+  .heatmap-cell { cursor: pointer; }
+  .heatmap-cell:focus-visible { outline: 2px solid var(--series-2); outline-offset: 1px; }
+
+  .legend { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--text-muted); margin-top: 10px; }
+  .legend-ramp {
+    width: 140px; height: 10px; border-radius: 3px;
+    background: linear-gradient(to right, var(--seq-100), var(--seq-400), var(--seq-700));
+  }
+
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--text-primary);
+    color: var(--surface-1);
+    font-size: 0.78rem;
+    padding: 5px 9px;
+    border-radius: 5px;
+    opacity: 0;
+    transform: translate(-50%, -130%);
+    transition: opacity 0.08s ease;
+    white-space: nowrap;
+    z-index: 20;
+  }
+
+  .toggle-table-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    padding: 4px 10px;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  #matrix-table { margin-top: 14px; display: none; font-variant-numeric: tabular-nums; }
+  #matrix-table.visible { display: table; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand"><a href="../../" style="color:inherit">viz<span>_</span>study</a></div>
+    <nav>
+      <a class="back-link" href="../../">← 一覧に戻る</a>
+      <button class="theme-toggle" data-theme-toggle type="button"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Attention Is All You Need</h1>
+  <div class="meta">
+    Vaswani et al., 2017 ・
+    <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">arXiv:1706.03762</a>
+  </div>
+  <div>
+    <span class="tag">NLP</span>
+    <span class="tag">Transformer</span>
+    <span class="tag">Attention</span>
+  </div>
+
+  <h2>一言でいうと</h2>
+  <p>
+    再帰（RNN）も畳み込み（CNN）も一切使わず、<strong>Self-Attentionだけ</strong>で系列（文章など）を処理する
+    ニューラルネットワーク「Transformer」を提案した論文。以降のBERT・GPTなど、現代の大規模言語モデルの
+    設計の土台になった。
+  </p>
+
+  <h2>解きたかった問題</h2>
+  <p>
+    それまで主流だったRNN/LSTMは、文を先頭から1トークンずつ順番に処理するため、(1) 並列計算がしづらく学習が遅い、
+    (2) 離れたトークン同士の関係（長距離依存）を学習しにくい、という弱点があった。CNNベースの手法は並列化はできるものの、
+    離れた位置の関係を捉えるには層を重ねる必要があり、経路が長くなる問題は残っていた。
+  </p>
+
+  <h2>提案手法の核心</h2>
+  <p>
+    各トークンについて、Query（何を知りたいか）・Key（何を提供できるか）・Value（実際の中身）という3つのベクトルを作り、
+    「QueryとKeyの内積（類似度）」を重みとして、系列内の<strong>全トークンのValueを一度に加重平均</strong>する
+    （Scaled Dot-Product Attention）。これを複数の異なる「注目の仕方」で並列に行うのが
+    <strong>Multi-Head Attention</strong>で、位置情報は再帰の代わりに Positional Encoding を足すことで持たせる。
+    この仕組みにより、系列長に関係なく任意の2トークン間を1ステップで直接結びつけられ、かつ全トークンを並列に計算できる。
+  </p>
+
+  <h2>触って理解する：Self-Attentionのヒートマップ</h2>
+  <p class="lede" style="font-size:0.95rem">
+    下のデモは、文中の各トークン（Query）が他のどのトークン（Key）に、どれくらいの重みで注目しているかを
+    ヒートマップで表したものです。Headを切り替えると、同じ文でも「注目の仕方」が変わる＝これが
+    Multi-Head Attentionの狙いであることが体感できます。
+  </p>
+
+  <div class="callout note-source">
+    ※ このデモの重みは、Transformerの仕組みを説明するために作成した<strong>合成データ</strong>です。
+    実際に学習されたモデルの出力ではありません（数式は論文と同じ Scaled Dot-Product Attention / Softmax を使用）。
+  </div>
+
+  <div class="demo-panel">
+    <div id="attention-demo"></div>
+  </div>
+
+  <h2>結果・インパクト</h2>
+  <p>
+    機械翻訳（WMT2014 英独・英仏）で当時のSOTAを、既存手法より大幅に少ない学習コストで達成。
+    何より、この単純で並列化しやすいアーキテクチャが後続研究の共通基盤となり、BERT・GPT系列・Vision Transformer
+    など、テキストに留まらず画像・音声にも展開される「Transformer時代」を切り開いた。
+  </p>
+
+  <h2>限界・批判点</h2>
+  <ul>
+    <li>Self-Attentionの計算量・メモリ量は系列長 <em>n</em> に対して <em>O(n²)</em> で増えるため、長い系列では重くなる
+      （後にSparse Attention・線形Attentionなど多数の改善研究を生んだ）。</li>
+    <li>位置情報を明示的な埋め込み（Positional Encoding）に頼っており、再帰のような「順序の帰納バイアス」を
+      持たないため、データ量が少ないと弱い場合がある。</li>
+    <li>Attentionの重み自体が「モデルの説明」として妥当かは議論があり、可視化＝解釈にはならない点に注意が必要
+      （このページのデモもあくまで直感用の合成例）。</li>
+  </ul>
+
+  <h2>学び・所感</h2>
+  <p>
+    「全トークン対全トークンを1ステップで結びつける」という設計が、長距離依存と並列計算という2つの課題を
+    同時に解決した点がこの論文の本質だと感じた。Multi-Headにより「複数の異なる関係性を同時に学習できる」
+    という発想は、後の様々なアーキテクチャにも通じる汎用的なアイデアだと思う。
+  </p>
+
+  <div class="callout">
+    改善提案・指摘があれば
+    <a href="https://github.com/on6848/viz_study/issues" target="_blank" rel="noopener">Issues</a> へどうぞ。
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">viz_study — a daily paper reading log with runnable visual demos.</div>
+</footer>
+
+<div id="tooltip" role="tooltip"></div>
+<script src="../../assets/js/site.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

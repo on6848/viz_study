@@ -1,0 +1,11 @@
+[
+  {
+    "slug": "2026-09-15-attention-is-all-you-need",
+    "date": "2026-09-15",
+    "title": "Attention Is All You Need",
+    "authors": "Vaswani et al., 2017",
+    "arxivUrl": "https://arxiv.org/abs/1706.03762",
+    "oneLiner": "再帰も畳み込みも使わず、Self-Attentionだけで系列を処理するTransformerを提案した論文。",
+    "tags": ["NLP", "Transformer", "Attention"]
+  }
+]
