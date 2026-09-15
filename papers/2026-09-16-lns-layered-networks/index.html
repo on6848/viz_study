@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fast and Readable Layered Network Visualizations — viz_study</title>
+<meta name="description" content="レイヤー配置のネットワーク図を、局所探索（Large Neighborhood Search）で少しずつ読みやすくしていく様子を、実際に動かして体験する。">
+<link rel="stylesheet" href="../../assets/css/style.css?v=20260916b">
+<style>
+  .lns-toolbar { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 12px; }
+  .lns-group-label { display: block; font-size: 0.76rem; color: var(--text-muted); margin-bottom: 5px; }
+  .lns-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lns-tab {
+    background: var(--surface-page); border: 1px solid var(--border); border-radius: 999px;
+    font-size: 0.78rem; padding: 4px 11px; cursor: pointer; color: var(--text-secondary);
+  }
+  .lns-tab[aria-pressed="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+
+  .lns-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .lns-actions button {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-secondary); font-size: 0.8rem; padding: 6px 12px; cursor: pointer;
+  }
+  .lns-actions button:hover { border-color: var(--series-1); }
+  .lns-actions button[data-action="step"], .lns-actions button[data-action="auto"] {
+    background: var(--series-1); border-color: var(--series-1); color: #fff;
+  }
+  .lns-actions button[data-action="stop"] { background: var(--series-8); border-color: var(--series-8); color: #fff; }
+
+  .lns-main { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .lns-graph-wrap { flex: 0 0 300px; }
+  .lns-graph-wrap svg { width: 100%; max-width: 300px; display: block; background: var(--surface-page); border: 1px solid var(--border); border-radius: 10px; }
+  .lns-legend { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 0.72rem; color: var(--text-secondary); }
+  .lns-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--series-1); margin-right: 5px; vertical-align: -1px; }
+  .lns-legend .dot.ring { background: none; border: 2px solid; width: 7px; height: 7px; }
+  .lns-legend .swatch { display: inline-block; width: 14px; height: 9px; border: 1px dashed var(--series-2); background: var(--series-2); opacity: 0.5; margin-right: 5px; vertical-align: -1px; }
+  .lns-legend .line { display: inline-block; width: 14px; height: 2px; margin-right: 5px; vertical-align: 2px; }
+
+  .lns-stats { flex: 1 1 260px; min-width: 240px; }
+  .lns-stat-value { font-size: 1.7rem; font-weight: 700; color: var(--series-1); }
+  .lns-stat-sub { font-size: 0.82rem; color: var(--text-secondary); margin: 4px 0 10px; }
+  #lns-trend { width: 100%; background: var(--surface-page); border: 1px solid var(--border); border-radius: 10px; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand"><a href="../../" style="color:inherit">viz<span>_</span>study</a></div>
+    <nav>
+      <a class="back-link" href="../../">← 一覧に戻る</a>
+      <button class="theme-toggle" data-theme-toggle type="button"></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Fast and Readable Layered Network Visualizations Using Large Neighborhood Search</h1>
+  <div class="meta">
+    Connor Wilson, Tarik Crnovrsanin, Eduardo Puerta, Cody Dunne（IEEE TVCG, 2025） ・
+    <a href="https://osf.io/w3fev/" target="_blank" rel="noopener">無料公開版・付録・データ（OSF）</a> ・
+    <a href="https://doi.org/10.1109/TVCG.2025.3537898" target="_blank" rel="noopener">DOI:10.1109/TVCG.2025.3537898</a>
+  </div>
+  <div>
+    <span class="tag">Graph Drawing</span>
+    <span class="tag">Optimization</span>
+    <span class="tag">Metaheuristic</span>
+  </div>
+
+  <h2>一言でいうと</h2>
+  <p>
+    フローチャートや階層図のような「レイヤー（層）ごとにノードを並べるネットワーク図」を、
+    <strong>Large Neighborhood Search（LNS）</strong>という最適化メタヒューリスティックで
+    素早く読みやすくする手法。「グラフ全体を一気に最適化する」のではなく、
+    <strong>小さな部分だけを何度も"厳密に"最適化することを繰り返す</strong>ことで、
+    速い発見的手法（ヒューリスティック）と遅いが完璧な最適化手法の"良いとこ取り"を狙う。
+  </p>
+
+  <h2>解きたかった問題</h2>
+  <p>
+    レイヤー配置のネットワーク図（LNV: Layered Network Visualization）は、辺の交差が多いと
+    とたんに読みにくくなる。速いヒューリスティック（重心法など）は大きなグラフでも一瞬で描けるが
+    交差は多く残る。一方、交差を数学的に最小化する最適化手法（ILP）は理論上は最良の図を作れるが、
+    ノード数が増えると計算時間が指数的に爆発し、時間を区切ると「たまたま運が良ければ改善、
+    悪ければ全く改善しない」という不安定さがある（論文中の"boom or bust"）。
+    <strong>「制限時間内で確実に、そこそこ良い図を返す」</strong>方法が求められていた。
+  </p>
+
+  <h2>提案手法の核心</h2>
+  <p>
+    LNSの発想はシンプル：グラフ全体を一度に最適化するのではなく、次の4ステップを制限時間いっぱい繰り返す。
+  </p>
+  <ol>
+    <li><strong>候補ノードを選ぶ</strong>（次数が高い／交差が多い／ランダム、など複数の選び方を比較）</li>
+    <li><strong>その周辺の小さな部分グラフ（近傍）を集める</strong>（BFSで周辺を辿る、次数中心にクラスタを集める、
+      レイヤーごとに掃くなど）</li>
+    <li><strong>その部分だけを、厳密な最適化モデル（ILP）で完全に解く</strong>（範囲が小さいので高速に解ける）</li>
+    <li>1に戻って繰り返す</li>
+  </ol>
+  <p>
+    小さな部分問題を厳密に解くことを何度も積み重ねるので、<strong>後戻りしない（改悪しない）</strong>まま、
+    制限時間の中でできる限り改善を積み上げられる。450個の合成ネットワークで検証した結果、
+    候補選択・近傍の集め方・近傍サイズの組み合わせによって、標準的な重心法ヒューリスティックに対して
+    <strong>交差数をおよそ半分〜1/2.5</strong>に減らせることを示した。
+  </p>
+
+  <h2>触って理解する：レイヤー配置図をLNSで読みやすくする</h2>
+  <p class="lns-hint" style="color:var(--text-secondary);font-size:0.92rem;margin-bottom:8px">
+    下のグラフは、逆コンパイルしたコードの制御フローグラフを模した小さな例です（架空・合成）。
+    わざと交差の多い初期配置から始まります。「重心法で整列」→「LNSを1ステップ実行」を何度か押して、
+    交差数がどう減っていくか観察してみてください。オレンジの枠が「今回、厳密に解き直した近傍」です。
+  </p>
+
+  <div class="callout note-source">
+    ※ ここで使っているネットワークと初期配置は説明用の<strong>合成データ</strong>です（論文の実験データではありません）。
+    論文の実装はILPソルバーで近傍を厳密に解きますが、このデモでは近傍を「同じレイヤー内の小さな窓」に限定し、
+    その範囲内の並べ替えをすべて試す<strong>総当たり</strong>で代用しています（近傍が小さいのでこれでも厳密解になります）。
+    候補選択は論文の5手法のうち3つ（次数中心性・交差数・ランダム）を実装し、近傍の集め方は
+    「レイヤー内の窓」1種類に簡略化しています（論文はBFS・次数クラスタ・レイヤー掃引・ランダムの4種類を比較）。
+  </div>
+
+  <div class="demo-panel">
+    <div id="lns-demo"></div>
+  </div>
+
+  <h2>結果・インパクト</h2>
+  <p>
+    450個の合成ネットワークでの評価では、標準的な反復重心法ヒューリスティックに対して一貫して
+    <strong>2〜2.5倍の交差改善</strong>を達成。実際の制御フローグラフ（Linuxコマンド13種、468〜2572ノード）を
+    使ったケーススタディでは、15分の制限時間内でILPソルバーに対して中央値5.7倍、
+    別のメタヒューリスティックであるTabu Searchに対して8.6倍の改善を示した。ILPは
+    「運が良ければ一気に改善、悪ければ全く進まない」不安定な挙動だったのに対し、LNSは
+    着実に改善し続ける安定した挙動を示した点も強調されている。
+  </p>
+
+  <h2>限界・批判点</h2>
+  <ul>
+    <li>この論文自体は「汎用的な最適アルゴリズム」を示すものではなく、候補選択・近傍選択・近傍サイズという
+      3つの設計軸についての実験的知見の提供にとどまる（著者ら自身が明言）。</li>
+    <li>モデルの変数数はレイヤーあたりのノード数・辺数に対して多項式的に増えるため、非常に大きなネットワーク
+      （数万ノード級）では近傍を解く1回あたりのコストも無視できなくなり、拡張性には限界がある。</li>
+    <li>交差数だけでなく辺の長さも同時に最適化するモデルでは、ILPソルバーがそもそも解を見つけられない
+      ケースがあり、LNS側にもモデル固有のチューニング（初期配置の工夫など）が必要だと述べられている。</li>
+  </ul>
+
+  <h2>学び・所感</h2>
+  <p>
+    「全体を一度に厳密に解く」のではなく「小さな部分を何度も厳密に解き直す」という発想は、
+    最適化と発見的手法の間のちょうど良い落としどころを作る汎用的なアイデアだと感じた。
+    可視化のレイアウト問題に限らず、「大域最適化は重いが局所最適化なら軽い」という性質を持つ問題全般に
+    応用が効きそうな考え方で、しかも"制限時間の中で着実に改善し続ける"という性質は、対話的な
+    可視化ツールとの相性が良いはずだと感じた。
+  </p>
+
+  <div class="callout">
+    改善提案・指摘があれば
+    <a href="https://github.com/on6848/viz_study/issues" target="_blank" rel="noopener">Issues</a> へどうぞ。
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">viz_study — a daily paper reading log with runnable visual demos.</div>
+</footer>
+
+<div id="tooltip" role="tooltip" style="position:fixed;pointer-events:none;opacity:0"></div>
+<script src="../../assets/js/site.js?v=20260916b"></script>
+<script src="demo.js?v=1"></script>
+</body>
+</html>
